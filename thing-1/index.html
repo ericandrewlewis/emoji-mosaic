@@ -1,0 +1,127 @@
+<html>
+<head>
+	<title></title>
+	<style>
+		body {
+			margin: 0;
+		}
+	</style>
+	<script src="emojiColors.js"></script>
+	<script>
+		// requestAnimationFrame polyfill by Erik Möller. fixes from Paul Irish and Tino Zijdel
+		// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+		// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+		// MIT license
+		(function() {
+			var lastTime = 0;
+			var vendors = ['ms', 'moz', 'webkit', 'o'];
+			for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+				window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+				window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+				                           || window[vendors[x]+'CancelRequestAnimationFrame'];
+			}
+
+			if (!window.requestAnimationFrame)
+				window.requestAnimationFrame = function(callback, element) {
+					var currTime = new Date().getTime();
+					var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+					var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+					  timeToCall);
+					lastTime = currTime + timeToCall;
+					return id;
+				};
+
+			if (!window.cancelAnimationFrame)
+				window.cancelAnimationFrame = function(id) {
+					clearTimeout(id);
+				};
+		}());
+		emojiMap = loadEmojis();
+		emojiInts = emojiPoints();
+		function loadEmojis(){
+			var colorMap = {};
+			for (var i=0; i<emojiColors.length; i++){
+				fileNumber = pad(i+1 , 4);
+				img = 'emoji-images/' + fileNumber + '.png';
+				colorMap[emojiColors[i]] = img
+			}
+			return colorMap;
+		}
+		function pad(num, size){ return ('000' + num).substr(-size); }
+		var closestEmoji = function(color) {
+			var distance = 99999999;
+			var c, d, p;
+			for (var i=0; i<emojiInts.length; i++){
+				p = emojiInts[i];
+				d = Math.sqrt( Math.pow((color[0]-p[0]), 2) + Math.pow((color[1]-p[1]), 2) + Math.pow((color[2]-p[2]), 2) );
+				if (d < distance){
+					distance = d;
+					c = p[3];
+				}
+			}
+			return emojiMap[c];
+		}
+		var blueValue = 0;
+		var blueVelocity = 10;
+		function placeEmojis() {
+			var svg = document.querySelector( 'svg' );
+			var column = 0;
+			var imageCounter = 0;
+			blueValue = blueValue + blueVelocity;
+			if ( blueValue > 255 ) {
+				blueVelocity *= -1;
+				blueValue = 255;
+			}
+			if ( blueValue < 0 ) {
+				blueVelocity *= -1;
+				blueValue = 0;
+			}
+
+			while ( column <= svg.clientWidth ) {
+				var row = 0;
+				var r = Math.floor( column / svg.clientWidth * 255 );
+				while ( row <= svg.clientHeight ) {
+					// Only create the <image> element once.
+					if ( ! svg.children[imageCounter] ) {
+						var imageEl = this.imageEl = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+						imageEl.setAttribute( 'x', column );
+						imageEl.setAttribute( 'y', row );
+						imageEl.setAttribute( 'height', 30 );
+						imageEl.setAttribute( 'width', 30 );
+						svg.appendChild(imageEl);
+					} else {
+						var imageEl = svg.children[imageCounter];
+					}
+					var g = Math.floor( row / svg.clientWidth * 255 );
+					var closest = closestEmoji( [r, g, blueValue ] );
+					imageEl.setAttributeNS( 'http://www.w3.org/1999/xlink', 'href', closest );
+					row += 20;
+					imageCounter++;
+				}
+			column += 20;
+			}
+		}
+		function emojiPoints(){
+			var pointArray = [];
+			var c, r, g, b;
+			for (var i=0; i<emojiColors.length; i++){
+				c = emojiColors[i];
+				r = parseInt("0x"+c.substr(1,2));
+				g = parseInt("0x"+c.substr(3,2));
+				b = parseInt("0x"+c.substr(5,2));
+				pointArray.push([r, g, b, c]);
+			}
+			return pointArray;
+		}
+
+		animate = function() {
+			requestAnimationFrame( animate );
+			placeEmojis();
+		}
+		document.addEventListener( 'DOMContentLoaded', animate );
+	</script>
+</head>
+<body>
+	<svg width="100%" height="100%"></svg>
+</body>
+</html>
