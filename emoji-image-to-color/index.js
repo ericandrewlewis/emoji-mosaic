@@ -9,8 +9,9 @@ fs.createReadStream('emoji-images/0001.png')
 
 		for (var y = 0; y < this.height; y++) {
 			for (var x = 0; x < this.width; x++) {
-				// For every pixel, toss it into a data structure
-				// we can go through later
+				// Skip the pixel if the opacity is below a threshold.
+
+				// Toss it into an octree structure we can go through later
 				// Convert rgb to hsl
 				var idx = (this.width * y + x) << 2;
 				console.log( this.data[idx+3] );
