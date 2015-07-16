@@ -7,8 +7,21 @@ function d3_geom_pointX(d) {
 function d3_geom_pointY(d) {
   return d[1];
 }
+/**
+ * Create a quadtree factory.
+ *
+ * This may not be necessary and only useful for the old compat that I've
+ * stripped out of here.
+ *
+ * @constructor
+ */
 quadtree = function() {
   var x = d3_geom_pointX, y = d3_geom_pointY, points, x1, y1, x2, y2;
+  /**
+   * Bind data to the quadtree.
+   *
+   * @param  {Array} data An array of points.
+   */
   function quadtree(data) {
     var d, fx = d3_functor(x), fy = d3_functor(y), xs, ys, i, n, x1_, y1_, x2_, y2_;
     if (x1 != null) {
@@ -29,6 +42,21 @@ quadtree = function() {
     }
     var dx = x2_ - x1_, dy = y2_ - y1_;
     if (dx > dy) y2_ = y1_ + dx; else x2_ = x1_ + dy;
+    /**
+     * Insert a point into the quadtree.
+     *
+     * @protected
+     *
+     * @param  {[type]} n  [description]
+     * @param  {[type]} d  [description]
+     * @param  {[type]} x  [description]
+     * @param  {[type]} y  [description]
+     * @param  {[type]} x1 [description]
+     * @param  {[type]} y1 [description]
+     * @param  {[type]} x2 [description]
+     * @param  {[type]} y2 [description]
+     * @return {[type]}    [description]
+     */
     function insert(n, d, x, y, x1, y1, x2, y2) {
       if (isNaN(x) || isNaN(y)) return;
       if (n.leaf) {
@@ -57,7 +85,13 @@ quadtree = function() {
       if (below) y1 = ym; else y2 = ym;
       insert(n, d, x, y, x1, y1, x2, y2);
     }
+    // The quadtree
     var root = d3_geom_quadtreeNode();
+    /**
+     * Add a point to the quadtree.
+     *
+     * @param {[type]} d [description]
+     */
     root.add = function(d) {
       insert(root, d, +fx(d, ++i), +fy(d, i), x1_, y1_, x2_, y2_);
     };
