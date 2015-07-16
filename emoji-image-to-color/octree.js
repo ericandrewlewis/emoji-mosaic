@@ -1,14 +1,20 @@
-var geom = require('pex-geom');
+// var geom = require('pex-geom');
 
-var Vec3 = geom.Vec3;
+// var Vec3 = geom.Vec3;
 
 /**
  * An octree.
  *
  * @constructor
  *
- * @param {[type]} position [description]
- * @param {[type]} size     [description]
+ * @param {Object} position Position of the octree corner.
+ * @param {Integer} position.x
+ * @param {Integer} position.y
+ * @param {Integer} position.z
+ * @param {[type]} size     Physical size of the octree.
+ * @param {[type]} size.x
+ * @param {[type]} size.y
+ * @param {[type]} size.z
  * @param {[type]} accuracy [description]
  */
 function Octree(position, size, accuracy) {
@@ -26,7 +32,10 @@ Octree.MaxLevel = 8;
 /**
  * Add a point to the Octree.
  *
- * @param {[type]} p    [description]
+ * @param {Object} p    Point
+ * @param {Integer} p.x
+ * @param {Integer} p.y
+ * @param {Integer} p.z
  * @param {[type]} data [description]
  */
 Octree.prototype.add = function (p, data) {
@@ -38,46 +47,28 @@ Octree.prototype.has = function (p) {
   return this.root.has(p);
 };
 
-//includeData - return both point and it's data, defaults to false
-//maxDist - don't include points further than maxDist, defaults to Inifinity
-//notSelf - return point only if different than submited point, defaults to false
-Octree.prototype.findNearestPoint = function (p, options) {
+/**
+ * Find the nearest point in the octree given a set of points.
+ *
+ * @param  {object} p                   The point.
+ * @param  {object} options             Options hash.
+ * @param  {object} options.includeData Return both point and it's data, defaults to false
+ * @param  {object} options.maxDist     Don't include points further than maxDist, defaults to Inifinity
+ * @param  {object} options.notSelf     Return point only if different than submited point, defaults to false
+ * @return {object} Closest point.
+ */
+Octree.prototype.find = function (p, options) {
+  options = options || {};
   options.includeData = options.includeData ? options.includeData : false;
   options.bestDist = options.maxDist ? options.maxDist : Infinity;
   options.notSelf = options.notSelf ? options.notSelf : false;
 
-  var result = this.root.findNearestPoint(p, options);
+  var result = this.root.find(p, options);
   if (result) {
     if (options.includeData) return result;
     else return result.point;
   }
   else return null;
-};
-
-Octree.prototype.findNearbyPoints = function (p, r, options) {
-  options = options || { };
-  var result = { points: [], data: [] };
-  this.root.findNearbyPoints(p, r, result, options);
-  return result;
-};
-
-Octree.prototype.getAllCellsAtLevel = function (cell, level, result) {
-  if (typeof level == 'undefined') {
-    level = cell;
-    cell = this.root;
-  }
-  result = result || [];
-  if (cell.level == level) {
-    if (cell.points.length > 0) {
-      result.push(cell);
-    }
-    return result;
-  } else {
-    cell.children.forEach(function (child) {
-      this.getAllCellsAtLevel(child, level, result);
-    }.bind(this));
-    return result;
-  }
 };
 
 /**
@@ -97,7 +88,6 @@ Octree.Cell = function (tree, position, size, level) {
   this.level = level;
   this.points = [];
   this.data = [];
-  this.temp = new Vec3(); //temp vector for distance calculation
   this.children = [];
 };
 
@@ -122,7 +112,7 @@ Octree.Cell.prototype.has = function (p) {
     var minDistSqrt = this.tree.accuracy * this.tree.accuracy;
     for (var i = 0; i < this.points.length; i++) {
       var o = this.points[i];
-      var distSq = p.squareDistance(o);
+      var distSq = squareDistanceBetweenPoints( p, o);
       if (distSq <= minDistSqrt) {
         return o;
       }
@@ -185,14 +175,14 @@ Octree.Cell.prototype.split = function () {
   var w2 = this.size.x / 2;
   var h2 = this.size.y / 2;
   var d2 = this.size.z / 2;
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x, y, z), Vec3.create(w2, h2, d2), this.level + 1));
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x + w2, y, z), Vec3.create(w2, h2, d2), this.level + 1));
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x, y, z + d2), Vec3.create(w2, h2, d2), this.level + 1));
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x + w2, y, z + d2), Vec3.create(w2, h2, d2), this.level + 1));
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x, y + h2, z), Vec3.create(w2, h2, d2), this.level + 1));
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x + w2, y + h2, z), Vec3.create(w2, h2, d2), this.level + 1));
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x, y + h2, z + d2), Vec3.create(w2, h2, d2), this.level + 1));
-  this.children.push(new Octree.Cell(this.tree, Vec3.create(x + w2, y + h2, z + d2), Vec3.create(w2, h2, d2), this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x, y: y, z: z}, {x: w2, y: h2, z: d2}, this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x + w2, y: y,  z: z}, {x: w2, y: h2, z: d2}, this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x, y: y, z: z + d2}, {x: w2, y: h2, z: d2}, this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x + w2, y: y,  z: z + d2}, {x: w2, y: h2, z: d2}, this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x, y: y + h2, z: z}, {x: w2, y: h2, z: d2}, this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x + w2, y: y + h2, z: z}, {x: w2, y: h2, z: d2}, this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x, y: y + h2, z: z + d2}, {x: w2, y: h2, z: d2}, this.level + 1));
+  this.children.push(new Octree.Cell(this.tree, {x: x + w2, y: y + h2, z: z + d2}, {x: w2, y: h2, z: d2}, this.level + 1));
   for (var i = 0; i < this.points.length; i++) {
     this.addToChildren(this.points[i], this.data[i]);
   }
@@ -213,20 +203,20 @@ Octree.Cell.prototype.squareDistanceToCenter = function(p) {
 }
 
 /**
- * Delete this as it's not critical to the API?
+ * Find the nearest point given a point in the octree.
  *
  * @param  {[type]} p       [description]
  * @param  {[type]} options [description]
  * @return {[type]}         [description]
  */
-Octree.Cell.prototype.findNearestPoint = function (p, options) {
+Octree.Cell.prototype.find = function (p, options) {
   var nearest = null;
   var nearestData = null;
   var bestDist = options.bestDist;
 
   if (this.points.length > 0 && this.children.length == 0) {
     for (var i = 0; i < this.points.length; i++) {
-      var dist = this.points[i].distance(p);
+      var dist = distanceBetweenPoints( this.points[i], p);
       if (dist <= bestDist) {
         if (dist == 0 && options.notSelf)
           continue;
@@ -255,11 +245,11 @@ Octree.Cell.prototype.findNearestPoint = function (p, options) {
           ) {
           continue;
         }
-        var childNearest = child.findNearestPoint(p, options);
+        var childNearest = child.find(p, options);
         if (!childNearest || !childNearest.point) {
           continue;
         }
-        var childNearestDist = childNearest.point.distance(p);
+        var childNearestDist = distanceBetweenPoints( childNearest.point, p);
         if (childNearestDist < bestDist) {
           nearest = childNearest.point;
           bestDist = childNearestDist;
@@ -274,43 +264,30 @@ Octree.Cell.prototype.findNearestPoint = function (p, options) {
   }
 };
 
-/**
- * Delete this as it's not critical to the API?
- *
- * @param  {[type]} p       [description]
- * @param  {[type]} options [description]
- * @return {[type]}         [description]
- */
-Octree.Cell.prototype.findNearbyPoints = function (p, r, result, options) {
-  if (this.points.length > 0 && this.children.length == 0) {
-    for (var i = 0; i < this.points.length; i++) {
-      var dist = this.points[i].distance(p);
-      if (dist <= r) {
-        if (dist == 0 && options.notSelf)
-          continue;
-        result.points.push(this.points[i]);
-        if (options.includeData) result.data.push(this.data[i]);
-      }
-    }
-  }
+Octree.Cell.prototype.visit = function(f) {
+	var x1 = this.position.x, x2 = this.position.x + this.size.x,
+	    y1 = this.position.y, y2 = this.position.y + this.size.y,
+	    z1 = this.position.z, z2 = this.position.z + this.size.z;
 
-  //children order doesn't matter
-  var children = this.children;
+	// If the visiting function doesn't return true, visit the branch cells.
+	if ( !f( x1, y1, z1, x2, y2, z2 ) ) {
+		this.children.forEach(function(child) {
+			child.visit(f);
+		});
+	}
+}
 
-  if (children.length > 0) {
-    for (var i = 0; i < children.length; i++) {
-      var child = children[i];
-      if (child.points.length > 0) {
-        if (p.x < child.position.x - r || p.x > child.position.x + child.size.x + r ||
-            p.y < child.position.y - r || p.y > child.position.y + child.size.y + r ||
-            p.z < child.position.z - r || p.z > child.position.z + child.size.z + r
-          ) {
-          continue;
-        }
-        child.findNearbyPoints(p, r, result, options);
-      }
-    }
-  }
-};
+function distanceBetweenPoints( p1, p2 ) {
+	var dx = p1.x - p2.x;
+  var dy = p1.y - p2.y;
+  var dz = p1.z - p2.z;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
 
+function squareDistanceBetweenPoints( p1, p2 ) {
+	var dx = p1.x - p2.x;
+  var dy = p1.y - p2.y;
+  var dz = p1.z - p2.z;
+  return dx * dx + dy * dy + dz * dz;
+}
 module.exports = Octree;
