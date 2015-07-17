@@ -1,6 +1,3 @@
-function d3_functor(v) {
-	return typeof v === "function" ? v : function() { return v; };
-}
 function d3_geom_pointX(d) {
 	return d[0];
 }
@@ -23,7 +20,36 @@ quadtree = function() {
 	 * @param  {Array} data An array of points.
 	 */
 	function quadtree(data) {
-		var d, fx = d3_functor(x), fy = d3_functor(y), xs, ys, i, n, x1_, y1_, x2_, y2_;
+		var d,
+		    /**
+		     * A store of all X coordinates in the data.
+		     */
+		    xs,
+		    /**
+		     * A store of all Y coordinates in the data.
+		     */
+		    ys,
+		    /**
+		     * An incrementer for looping over data.
+		     */
+		    i,
+		    n,
+		    /**
+		     * Low x-bound for the tree.
+		     */
+		    x1_,
+		    /**
+		     * Low y-bound for the tree.
+		     */
+		    y1_,
+		    /**
+		     * High x-bound for the tree.
+		     */
+		    x2_,
+		    /**
+		     * High y-bound for the tree.
+		     */
+		    y2_;
 		if (x1 != null) {
 			x1_ = x1, y1_ = y1, x2_ = x2, y2_ = y2;
 		} else {
@@ -31,7 +57,7 @@ quadtree = function() {
 			xs = [], ys = [];
 			n = data.length;
 			for (i = 0; i < n; ++i) {
-				var x_ = +fx(d = data[i], i), y_ = +fy(d, i);
+				var x_ = d3_geom_pointX(d = data[i]), y_ = d3_geom_pointY(d);
 				if (x_ < x1_) x1_ = x_;
 				if (y_ < y1_) y1_ = y_;
 				if (x_ > x2_) x2_ = x_;
@@ -48,10 +74,10 @@ quadtree = function() {
 		 * @protected
 		 *
 		 * @param  {[type]} n  Node.
-		 * @param  {[type]} d  [description]
+		 * @param  {Array} d   The x,y coordinates of the point.
 		 * @param  {[type]} x  [description]
 		 * @param  {[type]} y  [description]
-		 * @param  {[type]} x1 [description]
+		 * @param  {[type]} x1 Left x bound of the node.
 		 * @param  {[type]} y1 [description]
 		 * @param  {[type]} x2 [description]
 		 * @param  {[type]} y2 [description]
