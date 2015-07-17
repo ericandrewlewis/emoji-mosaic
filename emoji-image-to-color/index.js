@@ -14,7 +14,7 @@ fs.createReadStream('emoji-images/0001.png')
 		filterType: 4
 	}))
 	.on('parsed', function() {
-		var tree = new Octree( {x:0,y:0,z:0}, {x:1,y:1,z:1} );
+		var tree = new Octree( {x:0,y:0,z:0}, {x:255,y:255,z:255} );
 		// Iterate over every pixel in the image
 		for (var y = 0; y < this.height; y++) {
 			for (var x = 0; x < this.width; x++) {
@@ -23,45 +23,25 @@ fs.createReadStream('emoji-images/0001.png')
 				if ( this.data[index+3] < 127 ) {
 					continue;
 				}
-				// HSL is a more usable thing to figure out
-				var hsl = rgbToHsl( this.data[index], this.data[index+1], this.data[index+2] );
 
-				// saturation is a number that pushes out the point from the center.
-				hueAngle = hsl[0] * 360;
-
-				var multiplyY = 1, multiplyX = 1;
-				if ( hueAngle > 270 ) {
-					hueAngle -= 270;
-					multiplyY = -1;
-				}
-				if ( hueAngle > 180 ) {
-					hueAngle -= 90;
-					multiplyY = -1;
-				}
-				if ( hueAngle > 90 ) {
-					hueAngle -= 90;
-					multiplyX = -1;
-				}
-				var radians = hueAngle * Math.PI / 180;
-				// Calculate the X Y position of the points, given the
-				// length of the hypotenuse (saturation) and the angle of the triangle (hue).
-				// sin() = opp / hyp, therefore sin() * hyp = opp
-				yoffset = ( Math.sin(radians) * ( hsl[1] / 2 ) * multiplyY ) + .5;
-				// tan() = opp / adj, therefore adj / tan() = opp
-				xoffset = ( ( (yoffset - .5) / Math.tan(radians) ) * multiplyX ) + .5;
-
-				// Toss it into an octree structure we can go through later
-				tree.add( {x:xoffset, y:yoffset, z: hsl[2]} );
-		// 		// invert color
-		// 		this.data[idx] = 255 - this.data[idx];
-		// 		this.data[idx+1] = 255 - this.data[idx+1];
-		// 		this.data[idx+2] = 255 - this.data[idx+2];
-
-		// 		// and reduce opacity
-		// 		this.data[idx+3] = this.data[idx+3] >> 1;
+				tree.add( {x:this.data[index], y:this.data[index+1], z: this.data[index+2]} );
 			}
 		}
-		console.log( tree.find({x:.4, y:.5,z:.6}) );
+		console.log( tree.root.points.length );
+		// exit;
+		var x = 0;
+		tree.visit(function() {
+			console.log( arguments[0] );
+			return true;
+			x++;
+			console.log(x);
+			tree.visit(function(){
+				return true;
+			});
+		});
+		console.log( this.height, this.width );
+
+		console.log( tree.find({x:124, y:5,z:6}) );
 		processPixelColorData();
 		// this.pack().pipe(fs.createWriteStream('out.png'));
 	});

@@ -27,7 +27,7 @@ Octree.fromBoundingBox = function (bbox) {
   return new Octree(bbox.min.clone(), bbox.getSize().clone());
 };
 
-Octree.MaxLevel = 8;
+Octree.MaxLevel = 20;
 
 /**
  * Add a point to the Octree.
@@ -70,6 +70,10 @@ Octree.prototype.find = function (p, options) {
   }
   else return null;
 };
+
+Octree.prototype.visit = function(func) {
+	this.root.visit(func);
+}
 
 /**
  * An octree cell.
@@ -270,7 +274,7 @@ Octree.Cell.prototype.visit = function(f) {
 	    z1 = this.position.z, z2 = this.position.z + this.size.z;
 
 	// If the visiting function doesn't return true, visit the branch cells.
-	if ( !f( x1, y1, z1, x2, y2, z2 ) ) {
+	if ( !f( this, x1, y1, z1, x2, y2, z2 ) ) {
 		this.children.forEach(function(child) {
 			child.visit(f);
 		});
