@@ -54,12 +54,12 @@ octree = function(data) {
 		// arrays of just x and y values (for quick access?)
 		for (i = 0; i < n; ++i) {
 			var x_ = x(d = data[i]), y_ = y(d), z_ = z(d);
-			if (x_ < x1_) x1_ = x_;
-			if (y_ < y1_) y1_ = y_;
-			if (z_ < z1_) z1_ = z_;
-			if (x_ > x2_) x2_ = x_;
-			if (y_ > y2_) y2_ = y_;
-			if (z_ > z2_) z2_ = z_;
+			if (d.x < x1_) x1_ = d.x;
+			if (d.y < y1_) y1_ = d.y;
+			if (d.z < z1_) z1_ = d.z;
+			if (d.x > x2_) x2_ = d.x;
+			if (d.y > y2_) y2_ = d.y;
+			if (d.z > z2_) z2_ = d.z;
 		}
 		// The octree bounds must be a perfect cube for slicing up into sub-cubes.
 		var dx = x2_ - x1_, dy = y2_ - y1_, dz = z2_ - z1_;
@@ -141,7 +141,7 @@ octree = function(data) {
 		root.add = function(d) {
 			// Increment points tally.
 			i++;
-			insert(root, d, d[0], d[1], d[2], x1_, y1_, z1_, x2_, y2_, z2_);
+			insert(root, d, d.x, d.y, d.z, x1_, y1_, z1_, x2_, y2_, z2_);
 		};
 		/**
 		 * Visit each node in the octree invoking a function in every context.
@@ -164,7 +164,7 @@ octree = function(data) {
 		i = -1;
 		// Loop through the supplied nodes and insert them into the octree.
 		while (++i < n) {
-			insert(root, data[i], data[i][0], data[i][1], data[i][2], x1_, y1_, z1_, x2_, y2_, z2_);
+			insert(root, data[i], data[i].x, data[i].y, data[i].z, x1_, y1_, z1_, x2_, y2_, z2_);
 		}
 		data = d = null;
 		return root;

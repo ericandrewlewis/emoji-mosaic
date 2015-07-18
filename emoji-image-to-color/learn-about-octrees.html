@@ -6,10 +6,10 @@
 <body>
 <script>
 data = [];
-for ( i = 0; i <= 2; i++ ) {
-	for ( j = 0; j <= 2; j++ ) {
-		for ( k = 0; k <= 2; k++ ) {
-		data.push( [i,j, k] );
+for ( i = 0; i <= 1; i++ ) {
+	for ( j = 0; j <= 1; j++ ) {
+		for ( k = 0; k <= 1; k++ ) {
+		data.push( {x: i,y: j, z: k } );
 		}
 	}
 }
@@ -28,9 +28,9 @@ x.visit(function(node) {
 	// Find the number of points less than maxDist distance away
 	x.visit(function(quad, x1, y1, z1, x2, y2, z2) {
 		if (quad.point && (quad.point !== node)) {
-			var x = node.x - quad.point[0],
-				y = node.y - quad.point[1],
-				z = node.z - quad.point[2],
+			var x = node.x - quad.point.x,
+				y = node.y - quad.point.y,
+				z = node.z - quad.point.z,
 			distanceBetweenPoints = Math.sqrt(x * x + y * y  + z * z);
 			if (distanceBetweenPoints <= maxDist) {
 				closePoints++;
