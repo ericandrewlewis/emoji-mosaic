@@ -214,10 +214,10 @@ function d3_geom_octreeVisit(f, node, x1, y1, z1, x2, y2, z2) {
 		if (children[1]) d3_geom_octreeVisit(f, children[1], sx, y1, z1, x2, sy, sz);
 		if (children[2]) d3_geom_octreeVisit(f, children[2], x1, sy, z1, sx, y2, sz);
 		if (children[3]) d3_geom_octreeVisit(f, children[3], sx, sy, z1, x2, y2, sz);
-		if (children[4]) d3_geom_octreeVisit(f, children[0], x1, y1, sz, sx, sy, z2);
-		if (children[5]) d3_geom_octreeVisit(f, children[1], sx, y1, sz, x2, sy, z2);
-		if (children[6]) d3_geom_octreeVisit(f, children[2], x1, sy, sz, sx, y2, z2);
-		if (children[7]) d3_geom_octreeVisit(f, children[3], sx, sy, sz, x2, y2, z2);
+		if (children[4]) d3_geom_octreeVisit(f, children[4], x1, y1, sz, sx, sy, z2);
+		if (children[5]) d3_geom_octreeVisit(f, children[5], sx, y1, sz, x2, sy, z2);
+		if (children[6]) d3_geom_octreeVisit(f, children[6], x1, sy, sz, sx, y2, z2);
+		if (children[7]) d3_geom_octreeVisit(f, children[7], sx, sy, sz, x2, y2, z2);
 	}
 }
 /**
