@@ -123,12 +123,12 @@ octree = function(data) {
 		function insertChild(n, d, x, y, z, x1, y1, z1, x2, y2, z2) {
 			// Decide which child node the point falls in.
 			var xm = (x1 + x2) * .5, ym = (y1 + y2) * .5, zm = (z1 + z2) * .5,
-			    right = x >= xm, below = y >= ym, far = z >= zm, i = below << 1 | right | (4*far);
+			    right = x >= xm, below = y >= ym, behind = z >= zm, i = below << 1 | right | (4*behind);
 			n.leaf = false;
 			n = n.nodes[i] || (n.nodes[i] = d3_geom_octreeNode());
 			if (right) x1 = xm; else x2 = xm;
 			if (below) y1 = ym; else y2 = ym;
-			if (far)   z1 = zm; else z2 = zm;
+			if (behind)   z1 = zm; else z2 = zm;
 			insert(n, d, x, y, z, x1, y1, z1, x2, y2, z2);
 		}
 		// The octree.
