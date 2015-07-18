@@ -1,0 +1,49 @@
+<html>
+<head>
+	<title></title>
+	<script src="octree-d3-fork.js"></script>
+</head>
+<body>
+<script>
+data = [];
+for ( i = 0; i <= 2; i++ ) {
+	for ( j = 0; j <= 2; j++ ) {
+		for ( k = 0; k <= 2; k++ ) {
+		data.push( [i,j, k] );
+		}
+	}
+}
+var x = octree(data);
+// Visit each node
+x.visit(function(node) {
+	var maxDist = 1;
+	node.x = 0,node.y = 0,node.z = 0;
+	var nx1 = node.x - maxDist,
+		nx2 = node.x + maxDist,
+		ny1 = node.y - maxDist,
+		ny2 = node.y + maxDist,
+		nz1 = node.z - maxDist,
+		nz2 = node.z + maxDist,
+		closePoints = 0;
+	// Find the number of points less than maxDist distance away
+	x.visit(function(quad, x1, y1, z1, x2, y2, z2) {
+		if (quad.point && (quad.point !== node)) {
+			var x = node.x - quad.point[0],
+				y = node.y - quad.point[1],
+				z = node.z - quad.point[2],
+			distanceBetweenPoints = Math.sqrt(x * x + y * y  + z * z);
+			if (distanceBetweenPoints <= maxDist) {
+				closePoints++;
+			} else {
+				// debugger;
+			}
+		}
+		return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1 || z1 > nz2 || z2 < nz1;
+	});
+	console.log(closePoints);
+	return true;
+});
+
+</script>
+</body>
+</html>

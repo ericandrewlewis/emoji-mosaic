@@ -5,7 +5,13 @@
 </head>
 <body>
 <script>
-var x = quadtree()([[1,2],[2,4],[10,2]]);
+data = [];
+for ( i = 0; i <= 1000; i++ ) {
+	for ( j = 0; j <= 500; j++ ) {
+		data.push( [i,j] );
+	}
+}
+var x = quadtree(data);
 </script>
 </body>
 </html>

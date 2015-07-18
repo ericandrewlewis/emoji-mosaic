@@ -1,16 +1,19 @@
 /**
- * Create a quadtree.
+ * Create an Octree.
+ *
+ * This may not be necessary and only useful for the old compat that I've
+ * stripped out of here.
  *
  * @constructor
  */
-quadtree = function(data) {
-	var x = function(d) { return d[0] }, y = function(d) { return d[1] };
+octree = function(data) {
+	var x = function(d) { return d[0] }, y = function(d) { return d[1] }, z = function(d) { return d[2] };
 	/**
-	 * Bind data to the quadtree.
+	 * Bind data to the octree.
 	 *
 	 * @param  {Array} data An array of points.
 	 */
-	function quadtree(data) {
+	function octree(data) {
 		var d,
 		    /**
 		     * An incrementer for looping over data.
@@ -29,27 +32,41 @@ quadtree = function(data) {
 		     */
 		    y1_,
 		    /**
+		     * Low z-bound for the tree.
+		     */
+		    z1_,
+		    /**
 		     * High x-bound for the tree.
 		     */
 		    x2_,
 		    /**
 		     * High y-bound for the tree.
 		     */
-		    y2_;
-		x2_ = y2_ = -(x1_ = y1_ = Infinity);
+		    y2_,
+		    /**
+		     * High z-bound for the tree.
+		     */
+		    z2_;
+		x2_ = y2_ = z2_ = -(x1_ = y1_ = z1_ = Infinity);
 		n = data.length;
 		// Loop through all data,
-		// pushing the bounds of the quadtree
+		// pushing the bounds of the octree and creating
+		// arrays of just x and y values (for quick access?)
 		for (i = 0; i < n; ++i) {
-			var x_ = x(d = data[i]), y_ = y(d);
+			var x_ = x(d = data[i]), y_ = y(d), z_ = z(d);
 			if (x_ < x1_) x1_ = x_;
 			if (y_ < y1_) y1_ = y_;
+			if (z_ < z1_) z1_ = z_;
 			if (x_ > x2_) x2_ = x_;
 			if (y_ > y2_) y2_ = y_;
+			if (z_ > z2_) z2_ = z_;
 		}
-		var dx = x2_ - x1_, dy = y2_ - y1_;
-		// The quadtree bounds must be a perfect square for slicing up into subsquares.
-		if (dx > dy) y2_ = y1_ + dx; else x2_ = x1_ + dy;
+		// The octree bounds must be a perfect cube for slicing up into sub-cubes.
+		var dx = x2_ - x1_, dy = y2_ - y1_, dz = z2_ - z1_;
+		dmax = Math.max(dx, Math.max(dy, dz));
+		x2_ = x1_ + dmax;
+		y2_ = y1_ + dmax;
+		z2_ = z1_ + dmax;
 		/**
 		 * Insert a point into a node.
 		 *
@@ -65,29 +82,29 @@ quadtree = function(data) {
 		 * @param  {[type]} y2 [description]
 		 * @return {[type]}    [description]
 		 */
-		function insert(n, d, x, y, x1, y1, x2, y2) {
-			if (isNaN(x) || isNaN(y)) return;
+		function insert(n, d, x, y, z, x1, y1, z1, x2, y2, z2) {
+			if (isNaN(x) || isNaN(y) || isNaN(z)) return;
 			if (n.leaf) {
-				var nx = n.x, ny = n.y;
+				var nx = n.x, ny = n.y, nz = n.z;
 				// If the leaf node already has a point in it.
 				if (nx != null) {
 					// If the points are exactly the same, create another node with the
 					// same point one level deep.
-					if (Math.abs(nx - x) + Math.abs(ny - y) < .01) {
-						insertChild(n, d, x, y, x1, y1, x2, y2);
+					if (Math.abs(nx - x) + Math.abs(ny - y) + Math.abs(nz - z) < .01) {
+						insertChild(n, d, x, y, z, x1, y1, z1, x2, y2, z2);
 					} else {
 						// Separate the two points into two child nodes.
 						var nPoint = n.point;
-						n.x = n.y = n.point = null;
-						insertChild(n, nPoint, nx, ny, x1, y1, x2, y2);
-						insertChild(n, d, x, y, x1, y1, x2, y2);
+						n.x = n.y = n.z = n.point = null;
+						insertChild(n, nPoint, nx, ny, nz, x1, y1, z1, x2, y2, z2);
+						insertChild(n, d, x, y, z, x1, y1, z1, x2, y2, z2);
 					}
 				} else {
 					// If the node doesn't have a point yet, set the point.
-					n.x = x, n.y = y, n.point = d;
+					n.x = x, n.y = y, n.z = z, n.point = d;
 				}
 			} else {
-				insertChild(n, d, x, y, x1, y1, x2, y2);
+				insertChild(n, d, x, y, z, x1, y1, z1, x2, y2, z2);
 			}
 		}
 		/**
@@ -103,35 +120,37 @@ quadtree = function(data) {
 		 * @param  {[type]} y2 [description]
 		 * @return {[type]}    [description]
 		 */
-		function insertChild(n, d, x, y, x1, y1, x2, y2) {
+		function insertChild(n, d, x, y, z, x1, y1, z1, x2, y2, z2) {
 			// Decide which child node the point falls in.
-			var xm = (x1 + x2) * .5, ym = (y1 + y2) * .5, right = x >= xm, below = y >= ym, i = below << 1 | right;
+			var xm = (x1 + x2) * .5, ym = (y1 + y2) * .5, zm = (z1 + z2) * .5,
+			    right = x >= xm, below = y >= ym, far = z >= zm, i = below << 1 | right | (4*far);
 			n.leaf = false;
-			n = n.nodes[i] || (n.nodes[i] = d3_geom_quadtreeNode());
+			n = n.nodes[i] || (n.nodes[i] = d3_geom_octreeNode());
 			if (right) x1 = xm; else x2 = xm;
 			if (below) y1 = ym; else y2 = ym;
-			insert(n, d, x, y, x1, y1, x2, y2);
+			if (far)   z1 = zm; else z2 = zm;
+			insert(n, d, x, y, z, x1, y1, z1, x2, y2, z2);
 		}
-		// The quadtree.
-		var root = d3_geom_quadtreeNode();
+		// The octree.
+		var root = d3_geom_octreeNode();
 		/**
-		 * Add a point to the quadtree.
+		 * Add a point to the octree.
 		 *
 		 * @param {[type]} d [description]
 		 */
 		root.add = function(d) {
 			// Increment points tally.
 			i++;
-			insert(root, d, d[0], d[1], x1_, y1_, x2_, y2_);
+			insert(root, d, d[0], d[1], d[2], x1_, y1_, z1_, x2_, y2_, z2_);
 		};
 		/**
-		 * Visit each node in the quadtree invoking a function in every context.
+		 * Visit each node in the octree invoking a function in every context.
 		 *
 		 * @param  {[type]} f [description]
 		 * @return {[type]}   [description]
 		 */
 		root.visit = function(f) {
-			d3_geom_quadtreeVisit(f, root, x1_, y1_, x2_, y2_);
+			d3_geom_octreeVisit(f, root, x1_, y1_, z1_, x2_, y2_, z2_);
 		};
 		/**
 		 * Find the closest point in the tree to another point.
@@ -140,36 +159,40 @@ quadtree = function(data) {
 		 * @return {Array}       The closest point.
 		 */
 		root.find = function(point) {
-			return d3_geom_quadtreeFind(root, point[0], point[1], x1_, y1_, x2_, y2_);
+			return d3_geom_octreeFind(root, point[0], point[1], point[2], x1_, y1_, z1_, x2_, y2_, z2_);
 		};
 		i = -1;
-		// Loop through the supplied nodes and insert them into the Quadtree.
+		// Loop through the supplied nodes and insert them into the octree.
 		while (++i < n) {
-			insert(root, data[i], data[i][0], data[i][1], x1_, y1_, x2_, y2_);
+			insert(root, data[i], data[i][0], data[i][1], data[i][2], x1_, y1_, z1_, x2_, y2_, z2_);
 		}
 		data = d = null;
 		return root;
 	}
-	quadtree.x = function(_) {
-		return arguments.length ? (x = _, quadtree) : x;
+	octree.x = function(_) {
+		return arguments.length ? (x = _, octree) : x;
 	};
-	quadtree.y = function(_) {
-		return arguments.length ? (y = _, quadtree) : y;
+	octree.y = function(_) {
+		return arguments.length ? (y = _, octree) : y;
 	};
-	return quadtree(data);
+	octree.z = function(_) {
+		return arguments.length ? (z = _, octree) : z;
+	};
+	return octree(data);
 };
 /**
- * Create a quadtree node.
+ * Create a octree node.
  *
  * @return {[type]} [description]
  */
-function d3_geom_quadtreeNode() {
+function d3_geom_octreeNode() {
 	return {
 		leaf: true,
 		nodes: [],
 		point: null,
 		x: null,
-		y: null
+		y: null,
+		z: null
 	};
 }
 /**
@@ -184,17 +207,21 @@ function d3_geom_quadtreeNode() {
  * @param  {[type]} y2   [description]
  * @return {[type]}      [description]
  */
-function d3_geom_quadtreeVisit(f, node, x1, y1, x2, y2) {
-	if (!f(node, x1, y1, x2, y2)) {
-		var sx = (x1 + x2) * .5, sy = (y1 + y2) * .5, children = node.nodes;
-		if (children[0]) d3_geom_quadtreeVisit(f, children[0], x1, y1, sx, sy);
-		if (children[1]) d3_geom_quadtreeVisit(f, children[1], sx, y1, x2, sy);
-		if (children[2]) d3_geom_quadtreeVisit(f, children[2], x1, sy, sx, y2);
-		if (children[3]) d3_geom_quadtreeVisit(f, children[3], sx, sy, x2, y2);
+function d3_geom_octreeVisit(f, node, x1, y1, z1, x2, y2, z2) {
+	if (!f(node, x1, y1, z1, x2, y2, z2)) {
+		var sx = (x1 + x2) * .5, sy = (y1 + y2) * .5, sz = (z1 + z2) * .5, children = node.nodes;
+		if (children[0]) d3_geom_octreeVisit(f, children[0], x1, y1, z1, sx, sy, sz);
+		if (children[1]) d3_geom_octreeVisit(f, children[1], sx, y1, z1, x2, sy, sz);
+		if (children[2]) d3_geom_octreeVisit(f, children[2], x1, sy, z1, sx, y2, sz);
+		if (children[3]) d3_geom_octreeVisit(f, children[3], sx, sy, z1, x2, y2, sz);
+		if (children[4]) d3_geom_octreeVisit(f, children[0], x1, y1, sz, sx, sy, z2);
+		if (children[5]) d3_geom_octreeVisit(f, children[1], sx, y1, sz, x2, sy, z2);
+		if (children[6]) d3_geom_octreeVisit(f, children[2], x1, sy, sz, sx, y2, z2);
+		if (children[7]) d3_geom_octreeVisit(f, children[3], sx, sy, sz, x2, y2, z2);
 	}
 }
 /**
- * Given an x,y coordinate, find the closest point in the quadtree.
+ * Given an x,y coordinate, find the closest point in the octree.
  *
  * @param  {[type]} root [description]
  * @param  {[type]} x    [description]
@@ -205,7 +232,7 @@ function d3_geom_quadtreeVisit(f, node, x1, y1, x2, y2) {
  * @param  {[type]} y3   [description]
  * @return {[type]}      [description]
  */
-function d3_geom_quadtreeFind(root, x, y, x0, y0, x3, y3) {
+function d3_geom_octreeFind(root, x, y, x0, y0, x3, y3) {
 	/**
 	 * The minimum distance found to the coordinates.
 	 * @type {Number}
