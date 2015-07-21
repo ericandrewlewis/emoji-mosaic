@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="emojiColors.js"></script>
+<script>
+
+emojiMap = loadEmojis();
+emojiInts = emojiPoints();
+function loadEmojis(){
+	var colorMap = {};
+	for (var i=0; i<emojiColors.length; i++){
+		if ( emojiColors[i] == 'false' ) {
+			continue;
+		}
+		fileNumber = pad(i+1 , 4);
+		img = 'emoji-images/' + fileNumber + '.png';
+		colorMap[emojiColors[i]] = img
+	}
+	return colorMap;
+}
+function pad(num, size){ return ('000' + num).substr(-size); }
+var closestEmoji = function(color) {
+	var distance = 99999999;
+	var c, d, p;
+	for (var i=0; i<emojiInts.length; i++){
+		p = emojiInts[i];
+		d = Math.sqrt( Math.pow((color[0]-p[0]), 2) + Math.pow((color[1]-p[1]), 2) + Math.pow((color[2]-p[2]), 2) );
+		if (d < distance){
+			distance = d;
+			c = p[3];
+		}
+	}
+	return emojiMap[c];
+}
+
+function emojiPoints(){
+	var pointArray = [];
+	var c, r, g, b;
+	for (var i=0; i<emojiColors.length; i++){
+		c = emojiColors[i];
+		r = parseInt("0x"+c.substr(1,2));
+		g = parseInt("0x"+c.substr(3,2));
+		b = parseInt("0x"+c.substr(5,2));
+		pointArray.push([r, g, b, c]);
+	}
+	return pointArray;
+}
+
+var width = 960,
+		height = 800,
+		centerX = 0.5 * width,
+		centerY = 0.5 * height,
+		bigCircleRadius = 300;
+
+var sample = poissonDiscSampler(width, height, 10);
+
+var svg = d3.select("body").append("svg")
+		.attr("width", width)
+		.attr("height", height);
+
+d3.timer(function() {
+	// Make multiple runners?
+	for (var i = 0; i < 20; ++i) {
+		var s = sample();
+		if (!s) return true;
+		var deltaX = s[0] - centerX;
+		var deltaY = s[1] - centerY;
+		var angleInDegrees = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+
+		blueAngleInDegrees = angleInDegrees - 120;
+		if ( blueAngleInDegrees < -180 ) {
+			blueAngleInDegrees += 360;
+		}
+		greenAngleInDegrees = angleInDegrees + 120;
+		if ( greenAngleInDegrees > 180 ) {
+			greenAngleInDegrees -= 360;
+		}
+
+		var distFromCenterAsPercent = Math.sqrt( ( deltaX ) * ( deltaX ) + ( deltaY ) * ( deltaY ) ) / bigCircleRadius;
+
+		// redval is arc-distance as a percentage times 255
+		var r = 255 - ( Math.abs( angleInDegrees | 0 ) / 180 ) * ( 255 * distFromCenterAsPercent);
+		var g = 255 -( Math.abs( blueAngleInDegrees | 0 ) / 180 ) * ( 255 * distFromCenterAsPercent);
+		var b = 255 -( Math.abs( greenAngleInDegrees | 0 ) / 180 ) * ( 255 * distFromCenterAsPercent);
+
+		var closest = closestEmoji( [r, g, b ] );
+		svg.append("image")
+				.attr("x", s[0])
+				.attr("y", s[1])
+				.attr("height", 30 )
+				.attr("width", 30 )
+				.attr('xlink:href', closest );
+	}
+});
+
+/**
+ * Returns a function.
+ *
+ * Based on https://www.jasondavies.com/poisson-disc/
+ * @param radius Radius of the sampling circles?
+ */
+function poissonDiscSampler(width, height, radius) {
+	// Maximum number of samples before rejection.
+	var k = 30,
+			radius2 = radius * radius,
+			R = 3 * radius2,
+			cellSize = radius * Math.SQRT1_2,
+			gridWidth = Math.ceil(width / cellSize),
+			gridHeight = Math.ceil(height / cellSize),
+			// create an array containing every pixel in the grid.
+			// Index = y * gridWidth + x (i.e. read pixels left to right like a book).
+			grid = new Array(gridWidth * gridHeight),
+			queue = [],
+			queueSize = 0,
+			sampleSize = 0;
+
+	/**
+	 * Returns a good point.
+	 *
+	 * @return {[type]} [description]
+	 */
+	return function() {
+		// If there are no samples yet (first time through), create a sample in the middle.
+		if (!sampleSize) {
+			return sample(centerX, centerY);
+		}
+
+		while (queueSize) {
+			// Pick a random existing sample and remove it from the queue.
+			var i = Math.random() * queueSize | 0,
+					s = queue[i];
+
+			// Make a new candidate between [radius, 2 * radius] from the existing sample.
+			for (var j = 0; j < k; ++j) {
+				var a = 2 * Math.PI * Math.random(),
+						r = Math.sqrt(Math.random() * R + radius2),
+						x = s[0] + r * Math.cos(a),
+						y = s[1] + r * Math.sin(a);
+
+				var distFromCenter = Math.sqrt( ( centerX - x ) * ( centerX - x ) + ( centerY - y ) * ( centerY - y ) );
+				// Reject candidates that are outside the allowed extent,
+				// or closer than 2 * radius to any existing sample.
+				if (0 <= x && x < width && 0 <= y && y < height && far(x, y) && distFromCenter < bigCircleRadius) {
+					return sample(x, y);
+				}
+			}
+
+			queue[i] = queue[--queueSize];
+			queue.length = queueSize;
+		}
+	};
+
+	/**
+	 * Whether a coordinate is far enough from other existing points.
+	 *
+	 * @param  {[type]} x [description]
+	 * @param  {[type]} y [description]
+	 * @return {[type]}   [description]
+	 */
+	function far(x, y) {
+		var i = x / cellSize | 0,
+				j = y / cellSize | 0,
+				i0 = Math.max(i - 2, 0),
+				j0 = Math.max(j - 2, 0),
+				i1 = Math.min(i + 3, gridWidth),
+				j1 = Math.min(j + 3, gridHeight);
+
+		for (j = j0; j < j1; ++j) {
+			var o = j * gridWidth;
+			for (i = i0; i < i1; ++i) {
+				if (s = grid[o + i]) {
+					var s,
+							dx = s[0] - x,
+							dy = s[1] - y;
+					if (dx * dx + dy * dy < radius2) return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Add a sample to the global stores.
+	 *
+	 * @param  {Number} x
+	 * @param  {Number} y
+	 * @return {Array}
+	 */
+	function sample(x, y) {
+		var s = [x, y];
+		// Push the point onto the queue.
+		queue.push(s);
+		//
+		grid[gridWidth * (y / cellSize | 0) + (x / cellSize | 0)] = s;
+		++sampleSize;
+		++queueSize;
+		return s;
+	}
+}
+
+</script>

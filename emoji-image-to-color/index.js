@@ -1,85 +1,112 @@
 var fs = require('fs'),
 	PNG = require('pngjs').PNG,
-	Octree = require('./octree');
+	Octree = require('./octree-d3-fork'),
+	mapping = [];
 
-// var tree = new Octree( {x: 0,y:0,z:0}, {x: 100,y:100,z:100} );
-// tree.add({x: 1, y: 1,z: 1});
-// tree.add({x: 20, y: 20,z: 20});
-// tree.add({x: 40, y: 40,z: 40});
-// tree.add({x: 60, y: 60,z: 60});
-// console.log( tree.find({x: 41, y: 41,z: 41}) );
-// return;
-fs.createReadStream('emoji-images/0001.png')
-	.pipe(new PNG({
-		filterType: 4
-	}))
-	.on('parsed', function() {
-		var tree = new Octree( {x:0,y:0,z:0}, {x:255,y:255,z:255} );
-		// Iterate over every pixel in the image
-		for (var y = 0; y < this.height; y++) {
-			for (var x = 0; x < this.width; x++) {
-				var index = (this.width * y + x) << 2;
-				// Skip the pixel if the opacity is below a threshold.
-				if ( this.data[index+3] < 127 ) {
-					continue;
+var x = 0;
+// Could add a complete callback on this and trigger
+// it after image data parsing is complete.
+function readImageFile(filepath) {
+	var filepathIndexForArray = parseInt( filepath.replace(/^.*[\\\/]/, '') ) - 1;
+	fs.createReadStream(filepath)
+		.pipe(new PNG({
+			filterType: 4
+		}))
+		.on('parsed', function() {
+			var color = getMostPrevalentColor( this.data, this.width, this.height );
+			mapping[filepathIndexForArray] = color;
+			console.log(mapping);
+			var mappingThing = "var mapping = ['" + mapping.join("', '") + "'];";
+			fs.writeFile("asdf", mappingThing, function(err) {
+				if(err) {
+					return console.log(err);
 				}
-
-				tree.add( {x:this.data[index], y:this.data[index+1], z: this.data[index+2]} );
-			}
-		}
-		console.log( tree.root.points.length );
-		// exit;
-		var x = 0;
-		tree.visit(function() {
-			console.log( arguments[0] );
-			return true;
-			x++;
-			console.log(x);
-			tree.visit(function(){
-				return true;
 			});
 		});
-		console.log( this.height, this.width );
-
-		console.log( tree.find({x:124, y:5,z:6}) );
-		processPixelColorData();
-		// this.pack().pipe(fs.createWriteStream('out.png'));
+}
+fs.readdir('emoji-images', function(err, files) {
+	files.forEach(function(file){
+		if ( file.indexOf('png') < 0 ) {
+			return;
+		}
+		readImageFile('emoji-images/'+file);
 	});
+});
+/**
+ * Given pixel color data, finds the most prevalent color.
+ *
+ * @param  {[type]} data   [description]
+ * @param  {[type]} width  [description]
+ * @param  {[type]} height [description]
+ * @return {[type]}        [description]
+ */
+function getMostPrevalentColor(data, width, height) {
+	allPixels = [];
+	// Iterate over every pixel in the image
+	var y;
+	var x;
+	for ( y=0; y < height; y+=4 ) {
+		for ( x=0; x < width; x+=4 ) {
+			var index = (width * y + x) << 2;
+			// Skip the pixel if the opacity is below a threshold.
+			if ( data[index+3] < 127 ) {
+				continue;
+			}
+			allPixels.push( {x:data[index], y:data[index+1], z:data[index+2]} );
+		}
+	}
+	var tree = Octree(allPixels);
+	var minClosePoints = .35 * allPixels.length;
+	var wellSaturated = null;
+	var averageColor = [0,0,0];
+	var visited = 0;
+	tree.visit(function(node) {
+		visited++;
+		var maxDist = 30;
+		if ( ! node.point ) {
+			return;
+		}
+		var nx1 = node.x - maxDist,
+			nx2 = node.x + maxDist,
+			ny1 = node.y - maxDist,
+			ny2 = node.y + maxDist,
+			nz1 = node.z - maxDist,
+			nz2 = node.z + maxDist,
+			closePoints = 0,
+			visitedSelf = false;
+		averageColor[0] = ( averageColor[0] * ( visited - 1 ) + node.x ) / visited;
+		averageColor[1] = ( averageColor[1] * ( visited - 1 ) + node.y ) / visited;
+		averageColor[2] = ( averageColor[2] * ( visited - 1 ) + node.z ) / visited;
+		// Find the number of points less than maxDist distance away
+		tree.visit(function(quad, x1, y1, z1, x2, y2, z2) {
+			if (quad.point) {
+				var x = node.x - quad.point.x,
+					y = node.y - quad.point.y,
+					z = node.z - quad.point.z,
+				distanceBetweenPoints = Math.sqrt(x * x + y * y  + z * z);
+				if (distanceBetweenPoints <= maxDist) {
+					closePoints++;
+				}
+			}
+			return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1 || z1 > nz2 || z2 < nz1;
+		});
 
-function processPixelColorData() {
-	// now that we have all the pixels in some data structure,
-	// traverse it finding the most saturated part.
-	//
+		if ( closePoints > minClosePoints && ! wellSaturated ) {
+			wellSaturated = true;
+		}
+	});
+	if ( wellSaturated ) {
+		return rgbToHex( parseInt( averageColor[0] ), parseInt( averageColor[1] ), parseInt( averageColor[2] ) );
+	} else {
+		return false;
+	}
 }
 
-/**
- * Converts an RGB color value to HSL. Conversion formula
- * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
- * Assumes r, g, and b are contained in the set [0, 255] and
- * returns h, s, and l in the set [0, 1].
- *
- * @param   Number  r       The red color value
- * @param   Number  g       The green color value
- * @param   Number  b       The blue color value
- * @return  Array           The HSL representation
- */
-function rgbToHsl(r, g, b){
-    r /= 255, g /= 255, b /= 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h, s, l = (max + min) / 2;
+function componentToHex(c) {
+	var hex = c.toString(16);
+	return hex.length == 1 ? "0" + hex : hex;
+}
 
-    if(max == min){
-        h = s = 0; // achromatic
-    }else{
-        var d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch(max){
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-    }
-
-    return [h, s, l];
+function rgbToHex(r, g, b) {
+	return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }

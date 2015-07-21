@@ -293,3 +293,5 @@ function d3_geom_octreeFind(root, x, y, x0, y0, x3, y3) {
 	})(root, x0, y0, x3, y3);
 	return closestPoint;
 }
+
+module.exports = octree;
