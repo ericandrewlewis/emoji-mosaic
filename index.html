@@ -92,10 +92,32 @@ EmojiMosaic.prototype.imageLoaded = function() {
 	this.extractionCanvasContext = this.extractionCanvas.getContext('2d');
 	this.extractionCanvasContext.drawImage(this.img, 0, 0, this.extractionCanvas.width, this.extractionCanvas.height );
 
+	var saveButton = document.createElement( 'button' );
+	saveButton.setAttribute( 'type', 'button' );
+	saveButton.innerHTML = 'Save as image';
+	document.body.appendChild( saveButton );
+	var self = this;
+	saveButton.addEventListener('click', function() {
+		var a = document.createElement("a");
+		document.body.appendChild(a);
+		var canvasDataURI = self.targetCanvas.toDataURL('image/jpeg'),
+			blob = dataURItoBlob(canvasDataURI),
+			url = window.URL.createObjectURL(blob);
+		a.href = url;
+		a.download = 'emoji-mosaic.jpg';
+		a.click();
+		window.URL.revokeObjectURL(url);
+	});
+
 	// A canvas element that will be drawn to with Emoji.
 	this.targetCanvas = document.createElement('canvas');
 	this.targetCanvas.width = this.extractionCanvas.width + margin * 2;
 	this.targetCanvas.height = this.extractionCanvas.height + margin * 2;
+
+	// Fill a background.
+	this.targetCanvas.fillStyle = '#ffffff';
+	this.targetCanvas.fillRect( 0, 0, this.targetCanvas.width, this.targetCanvas.height );
+
 	this.targetCanvasContext = this.targetCanvas.getContext('2d');
 	document.body.appendChild( this.targetCanvas );
 	createSample = poissonDiscSampler(this.targetCanvas.width, this.targetCanvas.height, 8);
@@ -158,21 +180,6 @@ EmojiMosaic.prototype.imageLoaded = function() {
 			this.targetCanvasContext.restore();
 		}).bind(this);
 	}, this );
-	var saveLink = document.createElement( 'a' );
-	saveLink.innerHTML = 'save as image';
-	document.body.appendChild( saveLink );
-	var self = this;
-	saveLink.addEventListener('click', function() {
-		var a = document.createElement("a");
-		document.body.appendChild(a);
-		var canvasDataURI = self.targetCanvas.toDataURL('image/jpeg'),
-			blob = dataURItoBlob(canvasDataURI),
-			url = window.URL.createObjectURL(blob);
-		a.href = url;
-		a.download = 'emoji-mosaic.jpg';
-		a.click();
-		window.URL.revokeObjectURL(url);
-	});
 }
 
 function dataURItoBlob(dataURI) {
