@@ -163,7 +163,7 @@ EmojiMosaic.prototype.imageLoaded = function() {
 	document.body.appendChild( saveLink );
 	var self = this;
 	saveLink.addEventListener('click', function() {
-		var image = self.targetCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+		var image = self.targetCanvas.toDataURL('image/png');
 		window.location.href = image;
 	});
 }
@@ -175,7 +175,6 @@ document.addEventListener('DOMContentLoaded', function(event) {
 		var file = inputEl.files[0];
 		var reader = new FileReader();
 		reader.onloadend = function () {
-			// document.body.removeChild( document.querySelector('.input-wrapper') );
 			new EmojiMosaic(reader.result);
 		}
 		reader.readAsDataURL(file);
