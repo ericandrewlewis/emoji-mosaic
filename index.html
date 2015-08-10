@@ -106,7 +106,7 @@ EmojiMosaic.prototype.imageLoaded = function() {
 			url = window.URL.createObjectURL(blob);
 		a.href = url;
 		a.download = 'emoji-mosaic.jpg';
-		$(a).click();
+		$(a).trigger( 'click' );
 		window.URL.revokeObjectURL(url);
 	});
 
