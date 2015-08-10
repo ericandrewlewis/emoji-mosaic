@@ -97,17 +97,6 @@ EmojiMosaic.prototype.imageLoaded = function() {
 	saveButton.innerHTML = 'Save as image';
 	document.body.appendChild( saveButton );
 	var self = this;
-	saveButton.addEventListener('click', function() {
-		var a = document.createElement("a");
-		document.body.appendChild(a);
-		var canvasDataURI = self.targetCanvas.toDataURL('image/jpeg'),
-			blob = dataURItoBlob(canvasDataURI),
-			url = window.URL.createObjectURL(blob);
-		a.href = url;
-		a.download = 'emoji-mosaic.jpg';
-		$(a).trigger( 'click' );
-		window.URL.revokeObjectURL(url);
-	});
 
 	// A canvas element that will be drawn to with Emoji.
 	this.targetCanvas = document.createElement('canvas');
@@ -139,6 +128,8 @@ EmojiMosaic.prototype.imageLoaded = function() {
 		}
 		samples.push(s);
 	}
+
+	var emojisRendered = 0;
 
 	// At each sample, place an Emoji according to the image data at that point.
 	samples.forEach(function(sample){
@@ -179,6 +170,15 @@ EmojiMosaic.prototype.imageLoaded = function() {
 			this.targetCanvasContext.rotate( Math.ceil( Math.random() * 360 ) * Math.PI / 180 );
 			this.targetCanvasContext.drawImage( image, -15, -15, 30, 30 );
 			this.targetCanvasContext.restore();
+			emojisRendered++;
+			if ( emojisRendered === samples.length ) {
+				var canvasDataURI = self.targetCanvas.toDataURL('image/jpeg'),
+					blob = dataURItoBlob(canvasDataURI),
+					url = window.URL.createObjectURL(blob),
+					a = document.querySelector('a');
+				a.href = url;
+				a.download = 'emoji-mosaic.jpg';
+			}
 		}).bind(this);
 	}, this );
 }
