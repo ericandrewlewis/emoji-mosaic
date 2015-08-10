@@ -92,14 +92,13 @@ EmojiMosaic.prototype.imageLoaded = function() {
 	this.extractionCanvasContext = this.extractionCanvas.getContext('2d');
 	this.extractionCanvasContext.drawImage(this.img, 0, 0, this.extractionCanvas.width, this.extractionCanvas.height );
 
+	// A canvas element that will be drawn to with Emoji.
 	this.targetCanvas = document.createElement('canvas');
-	this.targetCanvas.width = 1000;
-	this.targetCanvas.height = 1000;
+	this.targetCanvas.width = this.extractionCanvas.width + margin * 2;
+	this.targetCanvas.height = this.extractionCanvas.height + margin * 2;
 	this.targetCanvasContext = this.targetCanvas.getContext('2d');
 	document.body.appendChild( this.targetCanvas );
-	width = this.img.width + margin * 2;
-	height = this.img.height + margin * 2;
-	createSample = poissonDiscSampler(width, height, 8);
+	createSample = poissonDiscSampler(this.targetCanvas.width, this.targetCanvas.height, 8);
 	samples = [];
 
 	// Create an array of samples (x,y coordinates) to place Emoji in.
@@ -112,7 +111,7 @@ EmojiMosaic.prototype.imageLoaded = function() {
 		if ( s[0] < margin || s[1] < margin ) {
 			continue;
 		}
-		if ( s[0] > width - margin || s[1] > height - margin ) {
+		if ( s[0] > this.targetCanvas.width - margin || s[1] > this.targetCanvas.height - margin ) {
 			continue;
 		}
 		samples.push(s);
@@ -160,7 +159,13 @@ EmojiMosaic.prototype.imageLoaded = function() {
 		}).bind(this);
 	}, this );
 	var saveLink = document.createElement( 'a' );
-	saveLink.setAttribute( 'href-lang', 'image/svg+xml' );
+	saveLink.innerHTML = 'save as image';
+	document.body.appendChild( saveLink );
+	var self = this;
+	saveLink.addEventListener('click', function() {
+		var image = self.targetCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+		window.location.href = image;
+	});
 }
 
 document.addEventListener('DOMContentLoaded', function(event) {
