@@ -93,8 +93,7 @@ EmojiMosaic.prototype.imageLoaded = function() {
 	this.extractionCanvasContext = this.extractionCanvas.getContext('2d');
 	this.extractionCanvasContext.drawImage(this.img, 0, 0, this.extractionCanvas.width, this.extractionCanvas.height );
 
-	var saveButton = document.createElement( 'button' );
-	saveButton.setAttribute( 'type', 'button' );
+	var saveButton = document.createElement( 'a' );
 	saveButton.innerHTML = 'Save as image';
 	document.body.appendChild( saveButton );
 	var self = this;
