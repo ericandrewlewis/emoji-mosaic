@@ -2,6 +2,7 @@
 <meta charset="utf-8">
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="emojiColors.js"></script>
 <script src="poisson-disc-sampler.js"></script>
 <h1>Emoji Mosaic</h1>
@@ -105,7 +106,7 @@ EmojiMosaic.prototype.imageLoaded = function() {
 			url = window.URL.createObjectURL(blob);
 		a.href = url;
 		a.download = 'emoji-mosaic.jpg';
-		a.click();
+		$(a).click();
 		window.URL.revokeObjectURL(url);
 	});
 
