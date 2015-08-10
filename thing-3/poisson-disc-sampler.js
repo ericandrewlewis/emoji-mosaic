@@ -48,7 +48,6 @@ function poissonDiscSampler(width, height, radius) {
 						x = s[0] + r * Math.cos(a),
 						y = s[1] + r * Math.sin(a);
 
-				var distFromCenter = Math.sqrt( ( centerX - x ) * ( centerX - x ) + ( centerY - y ) * ( centerY - y ) );
 				/*
 				 * Reject candidates that are outside the allowed extent,
 				 * or closer than 2 * radius to any existing sample.
