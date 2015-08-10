@@ -114,11 +114,12 @@ EmojiMosaic.prototype.imageLoaded = function() {
 	this.targetCanvas.width = this.extractionCanvas.width + margin * 2;
 	this.targetCanvas.height = this.extractionCanvas.height + margin * 2;
 
-	// Fill a background.
-	this.targetCanvas.fillStyle = '#ffffff';
-	this.targetCanvas.fillRect( 0, 0, this.targetCanvas.width, this.targetCanvas.height );
-
 	this.targetCanvasContext = this.targetCanvas.getContext('2d');
+
+	// Fill a background.
+	this.targetCanvasContext.fillStyle = '#ffffff';
+	this.targetCanvasContext.fillRect( 0, 0, this.targetCanvas.width, this.targetCanvas.height );
+
 	document.body.appendChild( this.targetCanvas );
 	createSample = poissonDiscSampler(this.targetCanvas.width, this.targetCanvas.height, 8);
 	samples = [];
