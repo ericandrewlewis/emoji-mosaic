@@ -173,7 +173,7 @@ EmojiMosaic.prototype.imageLoaded = function() {
 		emojiImage.setAttribute('data-y', (sample[1] - 10 ) );
 		// After the image is loaded, draw it onto the canvas.
 		emojiImage.onload = (function(event){
-			var image = event.srcElement;
+			var image = event.target;
 			this.targetCanvasContext.save();
 			this.targetCanvasContext.translate( image.getAttribute('data-x'), image.getAttribute('data-y') );
 			this.targetCanvasContext.rotate( Math.ceil( Math.random() * 360 ) * Math.PI / 180 );
