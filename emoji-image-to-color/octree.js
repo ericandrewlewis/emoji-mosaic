@@ -1,7 +1,3 @@
-// var geom = require('pex-geom');
-
-// var Vec3 = geom.Vec3;
-
 /**
  * An octree.
  *
