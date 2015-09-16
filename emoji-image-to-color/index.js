@@ -4,9 +4,13 @@ var fs = require('fs'),
 	mapping = [];
 
 var x = 0;
-// Could add a complete callback on this and trigger
-// it after image data parsing is complete.
-function readImageFile(filepath) {
+/**
+ * Given an image file, find the most prevalent color in it and write to the color map.
+ *
+ * @param  {[type]} filepath [description]
+ * @return {[type]}          [description]
+ */
+function readImageFile( filepath ) {
 	var filepathIndexForArray = parseInt( filepath.replace(/^.*[\\\/]/, '') ) - 1;
 	fs.createReadStream(filepath)
 		.pipe(new PNG({
@@ -24,13 +28,18 @@ function readImageFile(filepath) {
 			});
 		});
 }
+
+/*
+ * For all the emoji images in a folder, read each image fine.
+ */
 fs.readdir('emoji-images', function(err, files) {
-	files.forEach(function(file){
+	files.forEach( function(file) {
+		// Bail on filetype because there's some extra crap in there.
 		if ( file.indexOf('png') < 0 ) {
 			return;
 		}
-		readImageFile('emoji-images/'+file);
-	});
+		readImageFile( 'emoji-images/' + file );
+	} );
 });
 /**
  * Given pixel color data, finds the most prevalent color.
