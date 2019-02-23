@@ -7,6 +7,9 @@
 
 emojiMap = loadEmojis();
 emojiInts = emojiPoints();
+/**
+ * Create a map of hexadecimals to the emoji file path.
+ */
 function loadEmojis(){
 	var colorMap = {};
 	for (var i=0; i<emojiColors.length; i++){
@@ -20,6 +23,13 @@ function loadEmojis(){
 	return colorMap;
 }
 function pad(num, size){ return ('000' + num).substr(-size); }
+
+/**
+ * For a provided RGB color value, find the closest emoji's file path
+ * based on color distance.
+ *
+ * @param {Array} color - An RGB array, for example: [ 255, 122, 0 ]
+ */
 var closestEmoji = function(color) {
 	var distance = 99999999;
 	var c, d, p;
@@ -34,6 +44,14 @@ var closestEmoji = function(color) {
 	return emojiMap[c];
 }
 
+/**
+ * Get an array of all emoji's color data, in RGB and hex.
+ * For example:
+ * [
+ *   [133, 159, 184, "#859fb8"]
+ *   [129, 156, 182, "#819cb6"]
+ * ]
+ */
 function emojiPoints(){
 	var pointArray = [];
 	var c, r, g, b;
